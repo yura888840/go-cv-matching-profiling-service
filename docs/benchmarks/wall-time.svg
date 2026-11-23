@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 286" role="img" aria-label="Total matching time (lower is better)">
+<rect width="800" height="286" rx="14" fill="#0b1220"/>
+<text x="30" y="43" fill="#f8fafc" font-size="23" font-family="Arial,sans-serif" font-weight="700">Total matching time (lower is better)</text>
+<text x="30" y="84" fill="#cbd5e1" font-size="17" font-family="Arial,sans-serif">Sequential</text>
+<rect x="210" y="63" width="490" height="29" rx="5" fill="#243244"/>
+<rect x="210" y="63" width="408.33" height="29" rx="5" fill="#3b82f6"/>
+<text x="710" y="84" fill="#f8fafc" font-size="19" font-family="Arial,sans-serif">1.30 s</text>
+<text x="30" y="163" fill="#cbd5e1" font-size="17" font-family="Arial,sans-serif">4 workers</text>
+<rect x="210" y="142" width="490" height="29" rx="5" fill="#243244"/>
+<rect x="210" y="142" width="136.30" height="29" rx="5" fill="#f59e0b"/>
+<text x="710" y="163" fill="#f8fafc" font-size="19" font-family="Arial,sans-serif">0.43 s</text>
+<text x="30" y="258" fill="#94a3b8" font-size="13" font-family="Arial,sans-serif">500k CVs x 200 iterations · 3 samples per mode · median</text>
+</svg>
