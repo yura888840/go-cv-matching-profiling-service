@@ -94,4 +94,4 @@ jobs:
           stage="/tmp/go-matching-${GITHUB_SHA}"
           ssh "${ssh_opts[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "umask 077; mkdir -p '$stage'"
           scp "${scp_opts[@]}" dist/release.tar.gz .deploy/service.env "$DEPLOY_USER@$DEPLOY_HOST:$stage/"
-          ssh "${ssh_opts[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "sudo -n bash '$stage/install_release.sh' '$stage' '${GITHUB_SHA}'"
+          ssh "${ssh_opts[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "sudo -n /usr/local/sbin/go-matching-install '$stage' '${GITHUB_SHA}'"
