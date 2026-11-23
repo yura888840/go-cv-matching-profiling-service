@@ -1,0 +1,66 @@
+{
+  "date_utc": "2026-11-23T11:42:26.581566+00:00",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "python": "3.13.5",
+  "go_version": "go version go1.23.2 linux/amd64",
+  "cvs": 500000,
+  "iterations": 200,
+  "samples_per_mode": 3,
+  "scope": "Standalone matching CLI; process wall/CPU and peak RSS; synthetic CVs, no HTTP/DB",
+  "results": [
+    {
+      "mode": "sequential",
+      "wall_seconds": 1.310447,
+      "cpu_user_seconds": 1.284799,
+      "cpu_system_seconds": 0.032353,
+      "cpu_average_percent_of_one_core": 100.51,
+      "peak_rss_mib": 93.51,
+      "cv_per_second": 76309819
+    },
+    {
+      "mode": "worker_pool",
+      "wall_seconds": 0.45343,
+      "cpu_user_seconds": 1.478777,
+      "cpu_system_seconds": 0.019717,
+      "cpu_average_percent_of_one_core": 330.48,
+      "peak_rss_mib": 93.51,
+      "cv_per_second": 220541338
+    },
+    {
+      "mode": "worker_pool",
+      "wall_seconds": 0.431918,
+      "cpu_user_seconds": 1.419601,
+      "cpu_system_seconds": 0.020616,
+      "cpu_average_percent_of_one_core": 333.45,
+      "peak_rss_mib": 93.51,
+      "cv_per_second": 231525237
+    },
+    {
+      "mode": "sequential",
+      "wall_seconds": 1.256053,
+      "cpu_user_seconds": 1.247909,
+      "cpu_system_seconds": 0.008015,
+      "cpu_average_percent_of_one_core": 99.99,
+      "peak_rss_mib": 93.51,
+      "cv_per_second": 79614498
+    },
+    {
+      "mode": "sequential",
+      "wall_seconds": 1.302616,
+      "cpu_user_seconds": 1.284119,
+      "cpu_system_seconds": 0.01682,
+      "cpu_average_percent_of_one_core": 99.87,
+      "peak_rss_mib": 93.51,
+      "cv_per_second": 76768589
+    },
+    {
+      "mode": "worker_pool",
+      "wall_seconds": 0.434806,
+      "cpu_user_seconds": 1.423329,
+      "cpu_system_seconds": 0.03377,
+      "cpu_average_percent_of_one_core": 335.11,
+      "peak_rss_mib": 93.51,
+      "cv_per_second": 229987797
+    }
+  ]
+}
