@@ -151,3 +151,11 @@ Measurement: Linux amd64, Go 1.23.2, 500,000 synthetic CVs × 200 iterations per
 ## Production limitations
 
 This is a synthetic matching benchmark and simple read-only API. It currently reads up to `MAX_CVS` records per request, uses 64-bit skill masks rather than normalized real-world skills, and the per-request worker count does not cap total HTTP concurrency. For production, implement DB prefilters, request rate and concurrency limits, configurable weighted scoring, observability, migrations, and authorization that checks whether a caller may access the vacancy/CVs.
+
+## Automated production deployment (GitHub Actions)
+
+A CI/CD workflow is provided at [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Pull requests targeting `main`/`master` run tests; a successful push to either branch (including merges) runs tests, builds a Linux binary, and deploys it via SSH to a systemd-managed server. On readiness-check failure, the installer attempts to restore the previous release and environment.
+
+**One-time setup required:** configure the `production` GitHub Environment with SSH/database/API-key Secrets and deployment/allowlist Variables, prepare a dedicated server deploy account, and install the root-owned deployment command. **Credentials and SSH private keys must not be committed in Git.** See **[Production deployment instructions](docs/DEPLOYMENT.md)** for the precise variable names, setup steps, SSH host-key verification, migration prerequisites, security considerations, and rollback.
+
+The default branch of this repository is currently `main`, not `master`. Both triggers are supported, but GitHub environment controls and branch protection should match the actual release branch.
