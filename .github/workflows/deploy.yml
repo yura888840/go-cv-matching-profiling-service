@@ -1,0 +1,97 @@
+name: CI and production deploy
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Resolve dependencies and run tests
+        run: |
+          go mod tidy
+          go test ./...
+          go vet ./...
+      - name: Build production Linux binary
+        if: github.event_name == 'push'
+        env:
+          DEPLOY_GOARCH: ${{ vars.DEPLOY_GOARCH || 'amd64' }}
+        run: |
+          case "$DEPLOY_GOARCH" in amd64|arm64) ;; *) echo "Unsupported DEPLOY_GOARCH" >&2; exit 1;; esac
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=linux GOARCH="$DEPLOY_GOARCH" go build -trimpath -ldflags="-s -w" -o dist/matching-api ./cmd/api
+          tar -czf dist/release.tar.gz -C dist matching-api -C .. deploy/go-cv-matching.service migrations/001_init.sql
+      - name: Upload release
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-matching-linux
+          path: dist/release.tar.gz
+          retention-days: 7
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: go-matching-linux
+          path: dist
+      - name: Validate configuration and write systemd environment file
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          API_KEY: ${{ secrets.API_KEY }}
+          ALLOWED_IPS: ${{ vars.ALLOWED_IPS }}
+          ALLOWED_DOMAINS: ${{ vars.ALLOWED_DOMAINS }}
+          MATCHING_WORKERS: ${{ vars.MATCHING_WORKERS || '4' }}
+          MAX_CVS: ${{ vars.MAX_CVS || '500000' }}
+          APP_PORT: ${{ vars.APP_PORT || '8080' }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          mkdir -p .deploy
+          python3 scripts/render_deploy_env.py .deploy/service.env
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" || { echo "Set DEPLOY_HOST and DEPLOY_USER"; exit 1; }
+          test -n "$DEPLOY_SSH_PRIVATE_KEY" && test -n "$DEPLOY_SSH_KNOWN_HOSTS" || { echo "Configure DEPLOY_SSH_PRIVATE_KEY and DEPLOY_SSH_KNOWN_HOSTS"; exit 1; }
+      - name: SSH deploy and readiness check
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          trap 'rm -rf .deploy' EXIT
+          umask 077
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > .deploy/id_deploy
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > .deploy/known_hosts
+          chmod 600 .deploy/id_deploy .deploy/known_hosts .deploy/service.env
+          ssh_opts=(-i .deploy/id_deploy -o UserKnownHostsFile=.deploy/known_hosts -o StrictHostKeyChecking=yes -o BatchMode=yes -o IdentitiesOnly=yes -p "$DEPLOY_PORT")
+          scp_opts=(-i .deploy/id_deploy -o UserKnownHostsFile=.deploy/known_hosts -o StrictHostKeyChecking=yes -o BatchMode=yes -o IdentitiesOnly=yes -P "$DEPLOY_PORT")
+          stage="/tmp/go-matching-${GITHUB_SHA}"
+          ssh "${ssh_opts[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "umask 077; mkdir -p '$stage'"
+          scp "${scp_opts[@]}" dist/release.tar.gz .deploy/service.env "$DEPLOY_USER@$DEPLOY_HOST:$stage/"
+          ssh "${ssh_opts[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "sudo -n /usr/local/sbin/go-matching-install '$stage' '${GITHUB_SHA}'"
